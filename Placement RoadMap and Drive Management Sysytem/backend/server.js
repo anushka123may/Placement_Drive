@@ -3,25 +3,30 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
 app.use(cors());
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/placementDrives').then(()=>{
-  console.log('Connected to MongoDB');
-}).catch(()=>{
-  console.log('Error connecting to MongoDB');
-})
-
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    console.log('Error connecting to MongoDB:', error.message);
+  });
 
 const driveSchema = new mongoose.Schema({
   name: String,
   date: String,
   location: String,
-  status: { type: String, enum: ['Upcoming', 'Ongoing'], default: 'Upcoming' },
+  status: {
+    type: String,
+    enum: ['Upcoming', 'Ongoing'],
+    default: 'Upcoming'
+  },
 });
 
 const Drive = mongoose.model('Drive', driveSchema);
@@ -32,7 +37,10 @@ app.get('/api/getBooks', async (req, res) => {
     const drives = await Drive.find();
     res.json(drives);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching placement drives', error });
+    res.status(500).json({
+      message: 'Error fetching placement drives',
+      error: error.message
+    });
   }
 });
 
@@ -40,11 +48,25 @@ app.get('/api/getBooks', async (req, res) => {
 app.post('/api/addBook', async (req, res) => {
   try {
     const { name, date, location, status } = req.body;
-    const newDrive = new Drive({ name, date, location, status });
+
+    const newDrive = new Drive({
+      name,
+      date,
+      location,
+      status
+    });
+
     await newDrive.save();
-    res.status(201).json({ message: 'Drive added successfully', drive: newDrive });
+
+    res.status(201).json({
+      message: 'Drive added successfully',
+      drive: newDrive
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error adding placement drive', error });
+    res.status(500).json({
+      message: 'Error adding placement drive',
+      error: error.message
+    });
   }
 });
 
@@ -52,14 +74,21 @@ app.post('/api/addBook', async (req, res) => {
 app.delete('/api/deleteBook/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
     await Drive.findByIdAndDelete(id);
-    res.json({ message: 'Drive deleted successfully' });
+
+    res.json({
+      message: 'Drive deleted successfully'
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting placement drive', error });
+    res.status(500).json({
+      message: 'Error deleting placement drive',
+      error: error.message
+    });
   }
 });
 
-// Start the server
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
